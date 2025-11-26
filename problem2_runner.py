@@ -86,14 +86,16 @@
 import pandas as pd
 import numpy as np
 import os
+import warnings
 from simulation_engine import (
     build_universe, add_global_stats, mark_fut1_expiry_eod, 
     simulate_mean_reversion, RelZParams
 )
 
+# Suppress warnings
+warnings.filterwarnings('ignore')
+
 # === Parameters Strategy ===
-# CHANGED: Increased Entry to 2.0 to filter out noisy trades and reduce churn cost.
-# CHANGED: Tightened SL to 1.5 to cut losses early on illiquid spreads.
 ENTRY = 2.0
 TP = 0.5
 SL = 1.5
@@ -112,24 +114,19 @@ def generate_results():
     
     summary_data = []
     
-    # Group by underlying to run simulation per stock
+    # Group by underlying
     groups = [(under, g) for under, g in uni.groupby('underlying')]
     
+    # Iterate through stocks
     for stock_name, grp in groups:
-        # Run the simulation for this specific stock
-        perf, summary, tlog = simulate_mean_reversion(grp, zparams=zp)
+        # --- FIX IS HERE: Pass as tuple (stock_name, grp) ---
+        perf, summary, tlog = simulate_mean_reversion((stock_name, grp), zparams=zp)
         
         if summary.empty:
             continue
 
-        # === FIX: Calculate Max Position and Max Delta Correctly ===
-        # The summary stats from engine might be aggregated differently. 
-        # We verify against the 'perf' (minute-level) and 'tlog' (trade-level) data.
-        
-        # Max Gross Qty = Maximum Absolute Open Position observed
+        # Calculate Max Position and Max Delta Correctly
         max_gross_qty = perf['lots'].abs().max() if not perf.empty else 0
-        
-        # Max Delta Qty = Maximum size of a single trade
         max_delta_qty = tlog['delta_lots'].abs().max() if not tlog.empty else 0
         
         # Extract values for the report
@@ -153,7 +150,6 @@ def generate_results():
     results_df = pd.DataFrame(summary_data)
     
     # === Market Percentage Calculation ===
-    # Market_perc = lots_traded / total_lots_traded_in_market
     total_market_lots = results_df['total_lots_traded'].sum()
     if total_market_lots > 0:
         results_df['market_perc'] = (results_df['total_lots_traded'] / total_market_lots * 100).round(4)
