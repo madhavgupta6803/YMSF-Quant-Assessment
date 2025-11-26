@@ -1,0 +1,16 @@
+# Ignore the heavy data folder
+customdata_new/
+customdata/
+
+# Ignore python compiled files
+__pycache__/
+*.pyc
+
+# Ignore virtual environments (if any)
+venv/
+env/
+.env
+
+# Optional: Ignore generated outputs if you only want code in the repo
+# Results.csv
+# *.pdf
