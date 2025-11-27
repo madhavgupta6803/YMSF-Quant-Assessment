@@ -438,7 +438,7 @@ def create_pdf(filename):
     story.append(Paragraph("5. Execution", h2_style))
     text_exec = (
         "The simulation is powered by a vectorized Python engine (<i>simulation_engine.py</i>) optimized "
-        "for speed using <i>ProcessPoolExecutor</i>. The driver script (<i>run_sim.py</i>) runs the optimal "
+        "for speed using <i>ProcessPoolExecutor</i>. The driver script (<i>problem2_runner.py</i>) runs the optimal "
         "parameter set and generates the final <i>Results.csv</i>."
     )
     story.append(Paragraph(text_exec, body_style))
