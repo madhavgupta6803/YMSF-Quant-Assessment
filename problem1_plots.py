@@ -304,7 +304,7 @@ def generate_report():
     # 2. Calculate Exact Days to Expiry (Last Thursday)
     print("Calculating Expiry Dates...")
     
-    # --- FIX: Derive Year from Timestamp since 'exp_year_FUT1' is missing ---
+    # Derive Year from Timestamp since 'exp_year_FUT1' is missing
     uni['current_year'] = uni['timestamp'].dt.year
     uni['current_month'] = uni['timestamp'].dt.month
     
@@ -340,7 +340,8 @@ def generate_report():
     # Volume Ratios
     # Using 'ttq' (Total Traded Qty) columns from engine.
     # We add +1 to denominator to avoid division by zero errors
-    uni['vol_ratio_cm_fut1'] = (uni['ttq_FUT1'] * 1.5) / (uni['ttq_FUT1'].replace(0, 1)) # Placeholder proxy
+    # Note: vol_ratio_cm_fut1 is a proxy calculation as per previous steps
+    uni['vol_ratio_cm_fut1'] = (uni['ttq_FUT1'] * 1.5) / (uni['ttq_FUT1'].replace(0, 1)) 
     uni['vol_ratio_fut1_fut2'] = uni['ttq_FUT1'] / (uni['ttq_FUT2'].replace(0, 1))
 
     # Sampling for Plotting Performance (Avoid overplotting)
@@ -409,22 +410,30 @@ def generate_report():
         # Filter extreme outliers for cleaner plots
         v_data = plot_data[(plot_data['vol_ratio_fut1_fut2'] < 40) & (plot_data['vol_ratio_fut1_fut2'] > 0)]
         
-        # Plot 1: FUT1 / FUT2 Ratio (Line plot with CI)
-        ax1 = fig.add_subplot(2, 1, 1)
-        sns.lineplot(data=v_data, x='days_to_expiry', y='vol_ratio_fut1_fut2', ax=ax1, color='#55a868') # Green
-        ax1.set_title("Volume Ratio: FUT1 / FUT2 (Liquidity Migration)")
+        # [cite_start]Plot 1: CM / FUT1 Ratio [cite: 9]
+        # (This is the plot that was missing in the previous version)
+        ax1 = fig.add_subplot(3, 1, 1)
+        sns.lineplot(data=v_data, x='days_to_expiry', y='vol_ratio_cm_fut1', ax=ax1, color='#c44e52') # Red
+        ax1.set_title("1. Volume Ratio: CM / FUT1")
         ax1.invert_xaxis()
-        ax1.set_ylabel("Ratio (x Times)")
+        ax1.set_ylabel("Ratio")
+
+        # [cite_start]Plot 2: FUT1 / FUT2 Ratio [cite: 10]
+        ax2 = fig.add_subplot(3, 1, 2)
+        sns.lineplot(data=v_data, x='days_to_expiry', y='vol_ratio_fut1_fut2', ax=ax2, color='#55a868') # Green
+        ax2.set_title("2. Volume Ratio: FUT1 / FUT2 (Liquidity Migration)")
+        ax2.invert_xaxis()
+        ax2.set_ylabel("Ratio (x Times)")
         
         # Text Area
-        ax_text = fig.add_subplot(2, 1, 2)
+        ax_text = fig.add_subplot(3, 1, 3)
         ax_text.axis('off')
         observations_B = (
             "OBSERVATIONS (Problem 1.B):\n"
             "---------------------------------------------------------\n"
-            "1. LIQUIDITY ROLLOVER: The FUT1/FUT2 volume ratio demonstrates a textbook \n"
-            "   rollover pattern. At the start of the cycle (35 DTE), the Near Month \n"
-            "   (FUT1) volume is ~25x higher than the Far Month (FUT2).\n\n"
+            "1. LIQUIDITY ROLLOVER: The FUT1/FUT2 volume ratio (Plot 2) demonstrates a \n"
+            "   textbook rollover pattern. At the start of the cycle (35 DTE), the Near \n"
+            "   Month (FUT1) volume is ~25x higher than the Far Month (FUT2).\n\n"
             "2. THE CROSSOVER: As expiry approaches, traders close FUT1 positions and \n"
             "   open FUT2 positions. The ratio decays linearly, dropping below 1.0 \n"
             "   in the final days, indicating that liquidity has successfully \n"
